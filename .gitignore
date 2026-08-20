@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 과제 실행 산출물
+_out_*/
+*.hdf5
+*.npz
+*.stl
+*.usd
+*.usda
+*.png
+!docs/**/*.png
+
+# Isaac Sim / Omniverse 캐시
+.nvidia-omniverse/
+kit/
+*.log
+
+# 에디터
+.vscode/
+.idea/
+.DS_Store
