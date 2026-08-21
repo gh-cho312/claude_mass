@@ -60,6 +60,7 @@ NVIDIA **Isaac Sim**을 처음 다루는 사람이 **Isaac for Healthcare(i4h)**
 - [03. Isaac for Healthcare로 넘어가기](docs/03-i4h-연결.md) — i4h 워크플로우 구조와 진입 순서
 - [04. i4h 설치 (RTX 3090)](docs/04-i4h-설치-RTX3090.md) — `robotic_surgery` 워크플로 설치, num_envs 실측, Open-H-Embodiment 데이터셋
 - [05. 문제 해결 (RTX 3090)](docs/05-문제해결-RTX3090.md) — VRAM/OOM, 디스크, 발열, 설치 실패 대응
+- [06. 데이터셋 × Isaac Sim 호환성](docs/06-데이터셋-Isaac-Sim-호환성.md) — 어떤 공개 의료 로봇 데이터셋을 실제로 붙일 수 있는지, 다운로드 경로와 제약
 
 ---
 
