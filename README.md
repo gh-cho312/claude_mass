@@ -49,6 +49,8 @@ NVIDIA **Isaac Sim**을 처음 다루는 사람이 **Isaac for Healthcare(i4h)**
 | 08 | [커스텀 의료 에셋 파이프라인](exercises/ex08_custom_medical_asset/) | CT 세그멘테이션 → 장기 USD | `Usd`/`UsdGeom`, convex decomposition, 단위 변환 |
 | 09 | [다중 환경 클로닝 & 벤치마크](exercises/ex09_multi_env_cloning/) | RL 학습용 N개 환경 병렬화 | `GridCloner`, `Articulation` view, headless FPS 측정 |
 | 10 | [캡스톤: 자율 초음파 스캔](exercises/ex10_capstone_autoscan/) | 전 과정 통합 + 데이터 로깅 | 위 전부 + HDF5 |
+| 11 | [공개 데이터셋 다루기](exercises/ex11_public_dataset/) | 공개 의료 로봇 데이터 스키마 해독 | `LeRobotDataset`, 스트리밍, numpy |
+| 12 | [궤적을 dVRK에 재생](exercises/ex12_trajectory_replay/) | 실기기 궤적을 시뮬레이터로 | `AppLauncher`, `gym.make`, IK-Abs 액션, slerp |
 
 ---
 
@@ -61,6 +63,7 @@ NVIDIA **Isaac Sim**을 처음 다루는 사람이 **Isaac for Healthcare(i4h)**
 - [04. i4h 설치 (RTX 3090)](docs/04-i4h-설치-RTX3090.md) — `robotic_surgery` 워크플로 설치, num_envs 실측, Open-H-Embodiment 데이터셋
 - [05. 문제 해결 (RTX 3090)](docs/05-문제해결-RTX3090.md) — VRAM/OOM, 디스크, 발열, 설치 실패 대응
 - [06. 데이터셋 × Isaac Sim 호환성](docs/06-데이터셋-Isaac-Sim-호환성.md) — 어떤 공개 의료 로봇 데이터셋을 실제로 붙일 수 있는지, 다운로드 경로와 제약
+- [07. 공개 데이터로 실습하기](docs/07-공개데이터-실습.md) — Ex11/Ex12 진행 순서와 결론
 
 ---
 
