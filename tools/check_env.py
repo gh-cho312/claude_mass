@@ -84,10 +84,12 @@ def check_gpu() -> list[str]:
             notes.append(f"{name}: compute capability {cc} < 8.6 → i4h 초음파 레이트레이싱 불가.")
         if any(tag in name for tag in ("A100", "H100", "H200")):
             notes.append(f"{name}: 데이터센터 GPU는 RT Core가 없어 i4h robotic_ultrasound가 동작하지 않습니다.")
-        if vram_gb < 24:
+        # 24GB 카드는 드라이버에 따라 23.6~24.0 GB로 보고될 수 있어 23.5를 경계로 둔다.
+        if vram_gb < 23.5:
             notes.append(f"{name}: VRAM {vram_gb:.1f} GB — i4h 권장은 24 GB 이상(파인튜닝 48 GB).")
-        elif vram_gb < 48:
-            notes.append(f"{name}: VRAM {vram_gb:.1f} GB — 추론/시뮬은 가능, 파인튜닝은 48 GB 권장.")
+        elif vram_gb < 47.0:
+            notes.append(f"{name}: VRAM {vram_gb:.1f} GB — 추론/시뮬은 가능(RTX 3090/4090 급), "
+                         "파인튜닝(48 GB 권장)은 클라우드 GPU로 넘기세요.")
 
         try:
             if float(driver.split(".")[0]) < 555:
