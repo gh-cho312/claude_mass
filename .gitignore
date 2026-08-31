@@ -24,3 +24,14 @@ kit/
 .vscode/
 .idea/
 .DS_Store
+
+# ── i4h 설치 스크립트 (docs/04, 05) ──
+config/env.sh
+logs/
+runs/
+outputs/
+data/
+*.parquet
+*.mp4
+*.safetensors
+.ipynb_checkpoints/
