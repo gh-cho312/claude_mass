@@ -7,6 +7,8 @@ NVIDIA **Isaac Sim**을 처음 다루는 사람이 **Isaac for Healthcare(i4h)**
 포장되어 있어서, 과제를 다 풀고 나면 i4h의 `robotic_ultrasound` / `robotic_surgery`
 워크플로우 코드가 "읽히는" 상태가 됩니다.
 
+> 📑 **모든 과제의 파일·실행법·통과 기준을 한 장에 모은 [INDEX.md](INDEX.md)를 먼저 펼쳐두면 편합니다.**
+
 ---
 
 ## ⚠️ 먼저 읽어주세요 (검증 상태)
@@ -62,6 +64,7 @@ A100/H100은 RT Core가 없어 초음파 레이트레이싱이 안 되니 **오�
 
 ## 문서
 
+- [📑 INDEX](INDEX.md) — 10과제 파일·실행 명령·통과 기준을 한 장으로 모은 목차
 - [00. 환경 설정](docs/00-환경설정.md) — 설치 방법 3가지 비교, GPU 요구사항, 첫 실행 검증
 - [01. 핵심 개념](docs/01-핵심개념.md) — USD/Stage/Prim, SimulationApp 수명주기, 초보자가 반드시 밟는 함정 10가지
 - [02. API 치트시트](docs/02-API-치트시트.md) — 자주 쓰는 import와 패턴 모음
