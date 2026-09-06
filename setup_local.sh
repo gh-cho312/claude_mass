@@ -12,7 +12,7 @@
 #   4) tools/check_env.py 로 환경 검증
 #
 # 선택 (플래그):
-#   --with-surrol   SurRoL(수술로봇 RL 시뮬)을 별도 conda 환경 'surrol'(Py3.7)에 설치
+#   --with-surrol   SurRoL(수술로봇 RL 시뮬)을 별도 conda 환경 'surrol'(Py3.10)에 설치
 #   --with-i4h      Isaac for Healthcare 워크플로우 저장소를 clone (실행은 Docker 기반)
 #
 # 사용 예:
@@ -174,14 +174,14 @@ EOF
 
 # ---- (선택) SurRoL ----------------------------------------------------------
 if [[ "$WITH_SURROL" -eq 1 ]]; then
-  step "선택  SurRoL 설치 (별도 환경 'surrol', Python 3.7)"
+  step "선택  SurRoL 설치 (별도 환경 'surrol', Python 3.10)"
   warn "SurRoL은 Isaac Sim과 파이썬/의존성이 완전히 다릅니다. 반드시 별도 환경에 설치합니다."
   mkdir -p "$EXTERNAL_DIR"
   surrol_ok=1
   if conda env list | awk '{print $1}' | grep -qx "surrol"; then
     info "환경 'surrol' 이 이미 있습니다. 재사용합니다."
-  elif ! conda create -n surrol python=3.7 -y -c conda-forge --override-channels; then
-    warn "surrol 환경(python 3.7) 생성 실패 — SurRoL 설치를 건너뜁니다. (핵심 Isaac Sim 셋업은 정상)"
+  elif ! conda create -n surrol python=3.10 -y -c conda-forge --override-channels; then
+    warn "surrol 환경(python 3.10) 생성 실패 — SurRoL 설치를 건너뜁니다. (핵심 Isaac Sim 셋업은 정상)"
     surrol_ok=0
   fi
   if [[ "$surrol_ok" -eq 1 ]]; then
@@ -192,10 +192,21 @@ if [[ "$WITH_SURROL" -eq 1 ]]; then
       git clone https://github.com/med-air/SurRoL.git "${EXTERNAL_DIR}/SurRoL" \
         || warn "SurRoL clone 실패(네트워크 확인)."
     fi
-    ( cd "${EXTERNAL_DIR}/SurRoL" && python -m pip install --upgrade pip && python -m pip install -e . ) \
-      || warn "SurRoL 'pip install -e .' 에서 문제가 났습니다. RL 평가 스택(수정 gym/baselines, TF1.14)은
-               SurRoL README의 수동 절차가 필요할 수 있습니다. docs/04-로컬셋업.md 참고."
-    ok "SurRoL 설치 시도 완료. 테스트: ${EXTERNAL_DIR}/SurRoL/tests/ 의 주피터 노트북(test_psm.ipynb 등)"
+    # 주의: main 브랜치는 연구용 모노레포로 재편돼 저장소 '루트에 setup.py 가 없다'.
+    #       고전 SurRoL 패키지는 Benchmark/state_based 아래에 있다.
+    SURROL_PKG="${EXTERNAL_DIR}/SurRoL/Benchmark/state_based"
+    if [[ -f "${SURROL_PKG}/setup.py" ]]; then
+      ( cd "$SURROL_PKG" && python -m pip install --upgrade pip && python -m pip install -e . ) \
+        || warn "SurRoL 설치가 끝까지 가지 못했습니다. 알려진 마찰 요인:
+                 · panda3d==1.10.11 핀은 Python 3.11+ 휠이 없음(그래서 이 환경은 3.10)
+                 · 태스크가 MPM(taichi)/matplotlib/trimesh 를 추가로 요구할 수 있음
+                 · gym 은 2021년 goal-env API 기준(<0.26)
+                 자세한 대안은 docs/04-로컬셋업.md 의 B절을 보세요."
+    else
+      warn "SurRoL 패키지 경로를 찾지 못했습니다: ${SURROL_PKG}
+            업스트림 구조가 또 바뀌었을 수 있습니다. docs/04-로컬셋업.md 의 B절을 참고하세요."
+    fi
+    ok "SurRoL 단계 완료(위 경고 확인). 데모 스크립트: ${SURROL_PKG}/tests/demo_multiple_scenes.py"
     conda activate "$ENV_NAME"
   fi
 fi
