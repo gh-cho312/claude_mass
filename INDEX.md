@@ -16,6 +16,8 @@ claude_mass/
 ├── INDEX.md                      # ← 지금 이 파일 (한 장 정리)
 ├── setup_local.sh                # 로컬 PC 자동 셋업 (conda+Isaac Sim, --with-surrol/--with-i4h)
 ├── requirements.txt              # 과제집 추가 의존성 (h5py 등)
+├── examples/
+│   └── minimal_control.py        # 가장 작은 "코드로 통제" 예제 (부팅→스텝 루프→종료, ~40줄)
 ├── tools/
 │   └── check_env.py              # GPU/드라이버/i4h 요구사항 점검 (Isaac Sim 없이 실행 가능)
 ├── docs/
@@ -48,6 +50,13 @@ claude_mass/
 아직 설치 전이라면 **로컬 GPU PC에서** `bash setup_local.sh` 한 줄이면 conda 환경 + Isaac Sim 5.1 +
 의존성이 깔립니다 (`--with-surrol`, `--with-i4h` 로 시뮬레이터 추가). 전체 절차는
 [docs/04-로컬셋업.md](docs/04-로컬셋업.md)를 보세요.
+
+Isaac Sim을 처음 만져본다면 **가장 작은 예제**부터: `examples/minimal_control.py` 는 시뮬레이터를
+부팅 → 큐브 낙하 → 매 스텝 높이 읽기 → 종료까지 ~40줄로 "코드로 통제한다"의 실체를 보여줍니다.
+```bash
+python examples/minimal_control.py          # 헤드리스(숫자 출력)
+python examples/minimal_control.py --gui    # 창 띄워 눈으로
+```
 
 설치가 끝났으면, Isaac Sim을 **어떻게 설치했는지**에 따라 실행기가 다릅니다.
 
