@@ -19,7 +19,8 @@ claude_mass/
 ├── examples/
 │   └── minimal_control.py        # 가장 작은 "코드로 통제" 예제 (부팅→스텝 루프→종료, ~40줄)
 ├── tools/
-│   └── check_env.py              # GPU/드라이버/i4h 요구사항 점검 (Isaac Sim 없이 실행 가능)
+│   ├── check_env.py              # GPU/드라이버/i4h 요구사항 점검 (Isaac Sim 없이 실행 가능)
+│   └── make_desktop_launcher.sh  # pip 설치용 클릭 실행 아이콘(.desktop) 생성
 ├── docs/
 │   ├── 00-환경설정.md            # 설치 3가지 비교, 하드웨어 요구사항, RTX 3090 판정
 │   ├── 01-핵심개념.md            # USD/Stage/Prim, SimulationApp 수명주기, 초보 함정 10가지
