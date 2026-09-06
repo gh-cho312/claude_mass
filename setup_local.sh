@@ -186,27 +186,28 @@ if [[ "$WITH_SURROL" -eq 1 ]]; then
   fi
   if [[ "$surrol_ok" -eq 1 ]]; then
     conda activate surrol
+    # ★ main 브랜치는 연구용 모노레포(루트에 setup.py 없음 + 태스크가 MPM/taichi 요구)라
+    #   간단히 쓰기 어렵습니다. 깔끔한 SurRoL-v2 브랜치를 씁니다.
     if [[ -d "${EXTERNAL_DIR}/SurRoL/.git" ]]; then
       info "SurRoL 저장소가 이미 있습니다: ${EXTERNAL_DIR}/SurRoL"
     else
-      git clone https://github.com/med-air/SurRoL.git "${EXTERNAL_DIR}/SurRoL" \
+      git clone -b SurRoL-v2 https://github.com/med-air/SurRoL.git "${EXTERNAL_DIR}/SurRoL" \
         || warn "SurRoL clone 실패(네트워크 확인)."
     fi
-    # 주의: main 브랜치는 연구용 모노레포로 재편돼 저장소 '루트에 setup.py 가 없다'.
-    #       고전 SurRoL 패키지는 Benchmark/state_based 아래에 있다.
-    SURROL_PKG="${EXTERNAL_DIR}/SurRoL/Benchmark/state_based"
-    if [[ -f "${SURROL_PKG}/setup.py" ]]; then
-      ( cd "$SURROL_PKG" && python -m pip install --upgrade pip && python -m pip install -e . ) \
+    if [[ -f "${EXTERNAL_DIR}/SurRoL/setup.py" ]]; then
+      ( cd "${EXTERNAL_DIR}/SurRoL" \
+          && python -m pip install --upgrade pip \
+          && python -m pip install -e . \
+          && python -m pip install "gym==0.25.2" ) \
         || warn "SurRoL 설치가 끝까지 가지 못했습니다. 알려진 마찰 요인:
-                 · panda3d==1.10.11 핀은 Python 3.11+ 휠이 없음(그래서 이 환경은 3.10)
-                 · 태스크가 MPM(taichi)/matplotlib/trimesh 를 추가로 요구할 수 있음
-                 · gym 은 2021년 goal-env API 기준(<0.26)
-                 자세한 대안은 docs/04-로컬셋업.md 의 B절을 보세요."
+                 · panda3d==1.10.11 은 Python 3.11+ 휠이 없음(그래서 이 환경은 3.10)
+                 · gym 은 반드시 <0.26 (0.26+ 는 step API가 5-tuple로 바뀌어 깨짐)
+                 자세한 내용은 docs/04-로컬셋업.md 의 B절을 보세요."
+      ok "SurRoL 설치 시도 완료. 예제: python examples/surrol_needle_reach.py"
     else
-      warn "SurRoL 패키지 경로를 찾지 못했습니다: ${SURROL_PKG}
+      warn "SurRoL 루트에 setup.py 가 없습니다(${EXTERNAL_DIR}/SurRoL).
             업스트림 구조가 또 바뀌었을 수 있습니다. docs/04-로컬셋업.md 의 B절을 참고하세요."
     fi
-    ok "SurRoL 단계 완료(위 경고 확인). 데모 스크립트: ${SURROL_PKG}/tests/demo_multiple_scenes.py"
     conda activate "$ENV_NAME"
   fi
 fi

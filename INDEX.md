@@ -17,7 +17,8 @@ claude_mass/
 ├── setup_local.sh                # 로컬 PC 자동 셋업 (conda+Isaac Sim, --with-surrol/--with-i4h)
 ├── requirements.txt              # 과제집 추가 의존성 (h5py 등)
 ├── examples/
-│   └── minimal_control.py        # 가장 작은 "코드로 통제" 예제 (부팅→스텝 루프→종료, ~40줄)
+│   ├── minimal_control.py        # 가장 작은 "코드로 통제" 예제 (부팅→스텝 루프→종료, ~40줄)
+│   └── surrol_needle_reach.py    # SurRoL(수술로봇 PSM) 최소 예제 — 별도 'surrol' 환경 전용
 ├── tools/
 │   ├── check_env.py              # GPU/드라이버/i4h 요구사항 점검 (Isaac Sim 없이 실행 가능)
 │   └── make_desktop_launcher.sh  # pip 설치용 클릭 실행 아이콘(.desktop) 생성
