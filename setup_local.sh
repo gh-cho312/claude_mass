@@ -6,7 +6,7 @@
 # 클라우드/원격 세션이 아니라, Isaac Sim을 실제로 돌릴 그 머신에서 실행하세요.
 #
 # 하는 일 (기본):
-#   1) 사전 점검 (OS / GPU / conda)
+#   1) 사전 점검 (OS / GPU / conda). conda 가 없으면 Miniconda 자동 설치(--no-install-conda 로 끔)
 #   2) conda 환경 'isaacsim' (Python 3.11) 생성
 #   3) Isaac Sim 5.1.0 (pip) + 이 과제집 추가 의존성(h5py) 설치
 #   4) tools/check_env.py 로 환경 검증
@@ -33,6 +33,7 @@ PY_VERSION="3.11"
 ISAAC_VERSION="5.1.0"
 WITH_SURROL=0
 WITH_I4H=0
+AUTO_INSTALL_CONDA=1                            # conda 없으면 Miniconda 자동 설치 (--no-install-conda 로 끄기)
 EXTERNAL_DIR="${HOME}/isaac-healthcare-sims"   # SurRoL / i4h 를 clone 할 상위 폴더
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -44,16 +45,62 @@ warn()  { printf "%s[경고]%s %s\n"  "$c_ylw" "$c_reset" "$*"; }
 die()   { printf "%s[실패]%s %s\n"  "$c_red" "$c_reset" "$*" >&2; exit 1; }
 step()  { printf "\n%s==== %s ====%s\n" "$c_cyn" "$*" "$c_reset"; }
 
+# conda 를 확실히 쓸 수 있게 만든다. 성공하면 conda.sh 까지 source 된 상태로 반환.
+#   1) PATH 에 있으면 그대로 사용
+#   2) 흔한 경로에 설치돼 있으나 PATH 에 없으면 활성화
+#   3) 없으면 (AUTO_INSTALL_CONDA=1) Miniconda 를 배치 모드로 자동 설치
+ensure_conda() {
+  if command -v conda >/dev/null 2>&1; then
+    ok "conda 발견: $(conda --version)"
+    # shellcheck disable=SC1091
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    return
+  fi
+  local base
+  for base in "$HOME/miniconda3" "$HOME/anaconda3" "$HOME/miniforge3" "/opt/conda"; do
+    if [[ -f "$base/etc/profile.d/conda.sh" ]]; then
+      info "conda 가 설치돼 있지만 PATH 에 없습니다($base). 이번 실행에 활성화합니다."
+      # shellcheck disable=SC1091
+      source "$base/etc/profile.d/conda.sh"
+      ok "conda 발견: $(conda --version)"
+      return
+    fi
+  done
+
+  if [[ "$AUTO_INSTALL_CONDA" -ne 1 ]]; then
+    die "conda 가 없습니다. Miniconda 를 먼저 설치하거나 --no-install-conda 를 빼고 다시 실행하세요."
+  fi
+
+  warn "conda 가 없습니다. Miniconda 를 자동 설치합니다 → $HOME/miniconda3"
+  local url="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+  local installer="/tmp/miniconda_$$.sh"
+  if command -v wget >/dev/null 2>&1; then
+    wget -qO "$installer" "$url" || die "Miniconda 다운로드 실패(네트워크 확인)."
+  elif command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$url" -o "$installer" || die "Miniconda 다운로드 실패(네트워크 확인)."
+  else
+    die "wget/curl 이 없어 Miniconda 를 받을 수 없습니다. 'sudo apt install -y wget' 후 재실행하세요."
+  fi
+  bash "$installer" -b -p "$HOME/miniconda3" || die "Miniconda 설치 실패."
+  rm -f "$installer"
+  # shellcheck disable=SC1091
+  source "$HOME/miniconda3/etc/profile.d/conda.sh"
+  "$HOME/miniconda3/bin/conda" init bash >/dev/null 2>&1 || true
+  ok "Miniconda 설치 완료(새 터미널부터 conda 자동 활성화). 이번 실행은 계속 진행합니다."
+}
+
 usage() {
-  sed -n '2,40p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  # 파일 상단의 연속된 주석 헤더(2행부터 첫 비주석 행 전까지)만 출력
+  awk 'NR==1{next} /^#/{sub(/^# ?/,""); print; next} {exit}' "${BASH_SOURCE[0]}"
   exit 0
 }
 
 # ---- 플래그 파싱 ------------------------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --with-surrol)    WITH_SURROL=1 ;;
-    --with-i4h)       WITH_I4H=1 ;;
+    --with-surrol)      WITH_SURROL=1 ;;
+    --with-i4h)         WITH_I4H=1 ;;
+    --no-install-conda) AUTO_INSTALL_CONDA=0 ;;
     --env-name)       ENV_NAME="${2:?}"; shift ;;
     --isaac-version)  ISAAC_VERSION="${2:?}"; shift ;;
     --external-dir)   EXTERNAL_DIR="${2:?}"; shift ;;
@@ -77,17 +124,8 @@ else
   sleep 5
 fi
 
-if ! command -v conda >/dev/null 2>&1; then
-  die "conda 가 없습니다. Miniconda를 먼저 설치하세요:
-       wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-       bash Miniconda3-latest-Linux-x86_64.sh
-       그런 다음 새 터미널에서 이 스크립트를 다시 실행하세요."
-fi
-ok "conda 발견: $(conda --version)"
-
-# 비대화형 셸에서 'conda activate' 를 쓰려면 conda.sh 를 source 해야 함
-# shellcheck disable=SC1091
-source "$(conda info --base)/etc/profile.d/conda.sh"
+# conda 확보(없으면 자동 설치) + conda.sh source 까지 한 번에 처리
+ensure_conda
 
 # ---- 2) isaacsim 환경 생성 --------------------------------------------------
 step "2/4  conda 환경 '${ENV_NAME}' (Python ${PY_VERSION})"
