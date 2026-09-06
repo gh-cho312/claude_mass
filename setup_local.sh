@@ -189,7 +189,14 @@ if [[ "$WITH_SURROL" -eq 1 ]]; then
     # ★ main 브랜치는 연구용 모노레포(루트에 setup.py 없음 + 태스크가 MPM/taichi 요구)라
     #   간단히 쓰기 어렵습니다. 깔끔한 SurRoL-v2 브랜치를 씁니다.
     if [[ -d "${EXTERNAL_DIR}/SurRoL/.git" ]]; then
-      info "SurRoL 저장소가 이미 있습니다: ${EXTERNAL_DIR}/SurRoL"
+      # 예전에 main 브랜치로 받아둔 클론이 남아있으면 clone 이 거부되고, main 에는
+      # 루트 setup.py 가 없어 pip install 도 실패한다. 그래서 브랜치를 강제로 맞춘다.
+      info "SurRoL 저장소가 이미 있습니다 → SurRoL-v2 브랜치로 전환합니다."
+      ( cd "${EXTERNAL_DIR}/SurRoL" \
+          && git fetch origin SurRoL-v2 \
+          && git checkout -B SurRoL-v2 origin/SurRoL-v2 ) \
+        || warn "SurRoL-v2 로 전환하지 못했습니다. 가장 간단한 해결은 지우고 다시 받는 것입니다:
+                 rm -rf ${EXTERNAL_DIR}/SurRoL && bash setup_local.sh --with-surrol"
     else
       git clone -b SurRoL-v2 https://github.com/med-air/SurRoL.git "${EXTERNAL_DIR}/SurRoL" \
         || warn "SurRoL clone 실패(네트워크 확인)."
