@@ -62,7 +62,9 @@ ensure_conda() {
       info "conda 가 설치돼 있지만 PATH 에 없습니다($base). 이번 실행에 활성화합니다."
       # shellcheck disable=SC1091
       source "$base/etc/profile.d/conda.sh"
-      ok "conda 발견: $(conda --version)"
+      # 사용자의 다음 터미널에서도 'conda activate' 가 되도록 init (idempotent)
+      "$base/bin/conda" init bash >/dev/null 2>&1 || true
+      ok "conda 발견: $(conda --version)  (새 터미널부터 conda 자동 활성화)"
       return
     fi
   done
@@ -133,7 +135,9 @@ step "2/4  conda 환경 '${ENV_NAME}' (Python ${PY_VERSION})"
 if conda env list | awk '{print $1}' | grep -qx "$ENV_NAME"; then
   info "환경 '${ENV_NAME}' 이 이미 있습니다. 재사용합니다."
 else
-  conda create -n "$ENV_NAME" "python=${PY_VERSION}" -y
+  # conda-forge 만 사용(--override-channels)해서 Anaconda 기본 채널의 ToS 게이트를 피한다.
+  # (최신 conda는 repo.anaconda.com 기본 채널에 Terms of Service 동의를 요구함)
+  conda create -n "$ENV_NAME" "python=${PY_VERSION}" -y -c conda-forge --override-channels
   ok "환경 '${ENV_NAME}' 생성 완료"
 fi
 conda activate "$ENV_NAME"
@@ -173,22 +177,27 @@ if [[ "$WITH_SURROL" -eq 1 ]]; then
   step "선택  SurRoL 설치 (별도 환경 'surrol', Python 3.7)"
   warn "SurRoL은 Isaac Sim과 파이썬/의존성이 완전히 다릅니다. 반드시 별도 환경에 설치합니다."
   mkdir -p "$EXTERNAL_DIR"
+  surrol_ok=1
   if conda env list | awk '{print $1}' | grep -qx "surrol"; then
     info "환경 'surrol' 이 이미 있습니다. 재사용합니다."
-  else
-    conda create -n surrol python=3.7 -y
+  elif ! conda create -n surrol python=3.7 -y -c conda-forge --override-channels; then
+    warn "surrol 환경(python 3.7) 생성 실패 — SurRoL 설치를 건너뜁니다. (핵심 Isaac Sim 셋업은 정상)"
+    surrol_ok=0
   fi
-  conda activate surrol
-  if [[ -d "${EXTERNAL_DIR}/SurRoL/.git" ]]; then
-    info "SurRoL 저장소가 이미 있습니다: ${EXTERNAL_DIR}/SurRoL"
-  else
-    git clone https://github.com/med-air/SurRoL.git "${EXTERNAL_DIR}/SurRoL"
+  if [[ "$surrol_ok" -eq 1 ]]; then
+    conda activate surrol
+    if [[ -d "${EXTERNAL_DIR}/SurRoL/.git" ]]; then
+      info "SurRoL 저장소가 이미 있습니다: ${EXTERNAL_DIR}/SurRoL"
+    else
+      git clone https://github.com/med-air/SurRoL.git "${EXTERNAL_DIR}/SurRoL" \
+        || warn "SurRoL clone 실패(네트워크 확인)."
+    fi
+    ( cd "${EXTERNAL_DIR}/SurRoL" && python -m pip install --upgrade pip && python -m pip install -e . ) \
+      || warn "SurRoL 'pip install -e .' 에서 문제가 났습니다. RL 평가 스택(수정 gym/baselines, TF1.14)은
+               SurRoL README의 수동 절차가 필요할 수 있습니다. docs/04-로컬셋업.md 참고."
+    ok "SurRoL 설치 시도 완료. 테스트: ${EXTERNAL_DIR}/SurRoL/tests/ 의 주피터 노트북(test_psm.ipynb 등)"
+    conda activate "$ENV_NAME"
   fi
-  ( cd "${EXTERNAL_DIR}/SurRoL" && python -m pip install --upgrade pip && python -m pip install -e . ) \
-    || warn "SurRoL 'pip install -e .' 에서 문제가 났습니다. RL 평가 스택(수정 gym/baselines, TF1.14)은
-             SurRoL README의 수동 절차가 필요할 수 있습니다. docs/04-로컬셋업.md 참고."
-  ok "SurRoL 설치 시도 완료. 테스트: ${EXTERNAL_DIR}/SurRoL/tests/ 의 주피터 노트북(test_psm.ipynb 등)"
-  conda activate "$ENV_NAME"
 fi
 
 # ---- (선택) i4h -------------------------------------------------------------
