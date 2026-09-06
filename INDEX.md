@@ -14,13 +14,16 @@
 claude_mass/
 ├── README.md                     # 과제집 소개 + 4주 로드맵
 ├── INDEX.md                      # ← 지금 이 파일 (한 장 정리)
+├── setup_local.sh                # 로컬 PC 자동 셋업 (conda+Isaac Sim, --with-surrol/--with-i4h)
+├── requirements.txt              # 과제집 추가 의존성 (h5py 등)
 ├── tools/
 │   └── check_env.py              # GPU/드라이버/i4h 요구사항 점검 (Isaac Sim 없이 실행 가능)
 ├── docs/
 │   ├── 00-환경설정.md            # 설치 3가지 비교, 하드웨어 요구사항, RTX 3090 판정
 │   ├── 01-핵심개념.md            # USD/Stage/Prim, SimulationApp 수명주기, 초보 함정 10가지
 │   ├── 02-API-치트시트.md        # 자주 쓰는 import·패턴, 4.x→5.x 변경표
-│   └── 03-i4h-연결.md            # Isaac for Healthcare 워크플로우 진입 순서
+│   ├── 03-i4h-연결.md            # Isaac for Healthcare 워크플로우 진입 순서
+│   └── 04-로컬셋업.md            # Isaac Sim + SurRoL + i4h 로컬 설치 전체 절차
 └── exercises/
     ├── ex01_hello_phantom/       ┐
     ├── ex02_usd_physics/         │
@@ -42,7 +45,11 @@ claude_mass/
 
 ## 🚀 공통 실행법
 
-Isaac Sim을 **어떻게 설치했는지**에 따라 실행기가 다릅니다.
+아직 설치 전이라면 **로컬 GPU PC에서** `bash setup_local.sh` 한 줄이면 conda 환경 + Isaac Sim 5.1 +
+의존성이 깔립니다 (`--with-surrol`, `--with-i4h` 로 시뮬레이터 추가). 전체 절차는
+[docs/04-로컬셋업.md](docs/04-로컬셋업.md)를 보세요.
+
+설치가 끝났으면, Isaac Sim을 **어떻게 설치했는지**에 따라 실행기가 다릅니다.
 
 ```bash
 # (A) pip 설치(conda/venv) — conda 환경 안에서 그냥 python

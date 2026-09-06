@@ -1,0 +1,170 @@
+#!/usr/bin/env bash
+# =============================================================================
+# Isaac Sim for Healthcare 실습 - 로컬 PC 자동 셋업 스크립트
+# -----------------------------------------------------------------------------
+# 이 스크립트는 "여러분의 로컬 리눅스 PC(RTX GPU 장착)"에서 실행하는 용도입니다.
+# 클라우드/원격 세션이 아니라, Isaac Sim을 실제로 돌릴 그 머신에서 실행하세요.
+#
+# 하는 일 (기본):
+#   1) 사전 점검 (OS / GPU / conda)
+#   2) conda 환경 'isaacsim' (Python 3.11) 생성
+#   3) Isaac Sim 5.1.0 (pip) + 이 과제집 추가 의존성(h5py) 설치
+#   4) tools/check_env.py 로 환경 검증
+#
+# 선택 (플래그):
+#   --with-surrol   SurRoL(수술로봇 RL 시뮬)을 별도 conda 환경 'surrol'(Py3.7)에 설치
+#   --with-i4h      Isaac for Healthcare 워크플로우 저장소를 clone (실행은 Docker 기반)
+#
+# 사용 예:
+#   bash setup_local.sh
+#   bash setup_local.sh --with-surrol
+#   bash setup_local.sh --with-surrol --with-i4h
+#   bash setup_local.sh --isaac-version 5.0.0        # i4h가 고정한 5.0으로 맞추고 싶을 때
+#
+# ⚠️ 이 스크립트는 GPU 없는 환경에서 작성되어 "문법 검사(bash -n)"만 통과한 상태입니다.
+#    실제 GPU 머신에서의 전 구간 실행 검증은 하지 못했으니, 단계별 출력 메시지를
+#    확인하며 진행하세요. 문제가 생기면 docs/04-로컬셋업.md 의 수동 절차를 따르세요.
+# =============================================================================
+set -euo pipefail
+
+# ---- 설정 (플래그로 덮어쓰기 가능) -----------------------------------------
+ENV_NAME="isaacsim"
+PY_VERSION="3.11"
+ISAAC_VERSION="5.1.0"
+WITH_SURROL=0
+WITH_I4H=0
+EXTERNAL_DIR="${HOME}/isaac-healthcare-sims"   # SurRoL / i4h 를 clone 할 상위 폴더
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# ---- 로그 헬퍼 --------------------------------------------------------------
+c_reset=$'\033[0m'; c_grn=$'\033[32m'; c_ylw=$'\033[33m'; c_red=$'\033[31m'; c_cyn=$'\033[36m'
+info()  { printf "%s[정보]%s %s\n"  "$c_cyn" "$c_reset" "$*"; }
+ok()    { printf "%s[완료]%s %s\n"  "$c_grn" "$c_reset" "$*"; }
+warn()  { printf "%s[경고]%s %s\n"  "$c_ylw" "$c_reset" "$*"; }
+die()   { printf "%s[실패]%s %s\n"  "$c_red" "$c_reset" "$*" >&2; exit 1; }
+step()  { printf "\n%s==== %s ====%s\n" "$c_cyn" "$*" "$c_reset"; }
+
+usage() {
+  sed -n '2,40p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  exit 0
+}
+
+# ---- 플래그 파싱 ------------------------------------------------------------
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --with-surrol)    WITH_SURROL=1 ;;
+    --with-i4h)       WITH_I4H=1 ;;
+    --env-name)       ENV_NAME="${2:?}"; shift ;;
+    --isaac-version)  ISAAC_VERSION="${2:?}"; shift ;;
+    --external-dir)   EXTERNAL_DIR="${2:?}"; shift ;;
+    -h|--help)        usage ;;
+    *) die "알 수 없는 옵션: $1  (도움말: bash setup_local.sh --help)" ;;
+  esac
+  shift
+done
+
+# ---- 1) 사전 점검 -----------------------------------------------------------
+step "1/4  사전 점검"
+
+[[ "$(uname -s)" == "Linux" ]] || warn "이 스크립트는 Ubuntu 22.04/24.04 x86_64 기준입니다. 현재: $(uname -s)"
+
+if command -v nvidia-smi >/dev/null 2>&1; then
+  gpu_line="$(nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader 2>/dev/null | head -1)"
+  ok "GPU 감지: ${gpu_line:-불명}"
+else
+  warn "nvidia-smi 가 없습니다. NVIDIA GPU/드라이버가 없으면 Isaac Sim은 설치돼도 '실행'이 안 됩니다."
+  warn "이 머신이 여러분의 RTX GPU PC가 맞는지 확인하세요. (계속하려면 5초 후 진행)"
+  sleep 5
+fi
+
+if ! command -v conda >/dev/null 2>&1; then
+  die "conda 가 없습니다. Miniconda를 먼저 설치하세요:
+       wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+       bash Miniconda3-latest-Linux-x86_64.sh
+       그런 다음 새 터미널에서 이 스크립트를 다시 실행하세요."
+fi
+ok "conda 발견: $(conda --version)"
+
+# 비대화형 셸에서 'conda activate' 를 쓰려면 conda.sh 를 source 해야 함
+# shellcheck disable=SC1091
+source "$(conda info --base)/etc/profile.d/conda.sh"
+
+# ---- 2) isaacsim 환경 생성 --------------------------------------------------
+step "2/4  conda 환경 '${ENV_NAME}' (Python ${PY_VERSION})"
+
+if conda env list | awk '{print $1}' | grep -qx "$ENV_NAME"; then
+  info "환경 '${ENV_NAME}' 이 이미 있습니다. 재사용합니다."
+else
+  conda create -n "$ENV_NAME" "python=${PY_VERSION}" -y
+  ok "환경 '${ENV_NAME}' 생성 완료"
+fi
+conda activate "$ENV_NAME"
+ok "활성 환경: $(python -c 'import sys; print(sys.prefix)')"
+
+# ---- 3) Isaac Sim + 의존성 설치 --------------------------------------------
+step "3/4  Isaac Sim ${ISAAC_VERSION} + 과제집 의존성 설치"
+
+python -m pip install --upgrade pip
+info "Isaac Sim 다운로드는 수 GB이고 수십 분 걸릴 수 있습니다..."
+python -m pip install "isaacsim[all,extscache]==${ISAAC_VERSION}" --extra-index-url https://pypi.nvidia.com \
+  || die "Isaac Sim 설치 실패. 십중팔구 Python 버전 불일치입니다(5.x는 3.11 필요).
+          'pip index versions isaacsim --extra-index-url https://pypi.nvidia.com' 로 받을 수 있는 버전을 확인하세요."
+
+if [[ -f "${REPO_DIR}/requirements.txt" ]]; then
+  python -m pip install -r "${REPO_DIR}/requirements.txt"
+  ok "과제집 추가 의존성(h5py 등) 설치 완료"
+fi
+
+# ---- 4) 환경 검증 -----------------------------------------------------------
+step "4/4  환경 검증 (tools/check_env.py)"
+python "${REPO_DIR}/tools/check_env.py" || warn "check_env.py 가 경고를 냈습니다. 위 항목을 확인하세요."
+
+cat <<EOF
+
+${c_grn}=== Isaac Sim + 과제집 기본 셋업 완료 ===${c_reset}
+다음처럼 첫 과제 해답을 짧게 실행해 API 호환성을 확인하세요:
+
+    conda activate ${ENV_NAME}
+    python "${REPO_DIR}/exercises/ex01_hello_phantom/solution.py" --test
+
+전체 목차는 ${REPO_DIR}/INDEX.md 를 보세요.
+EOF
+
+# ---- (선택) SurRoL ----------------------------------------------------------
+if [[ "$WITH_SURROL" -eq 1 ]]; then
+  step "선택  SurRoL 설치 (별도 환경 'surrol', Python 3.7)"
+  warn "SurRoL은 Isaac Sim과 파이썬/의존성이 완전히 다릅니다. 반드시 별도 환경에 설치합니다."
+  mkdir -p "$EXTERNAL_DIR"
+  if conda env list | awk '{print $1}' | grep -qx "surrol"; then
+    info "환경 'surrol' 이 이미 있습니다. 재사용합니다."
+  else
+    conda create -n surrol python=3.7 -y
+  fi
+  conda activate surrol
+  if [[ -d "${EXTERNAL_DIR}/SurRoL/.git" ]]; then
+    info "SurRoL 저장소가 이미 있습니다: ${EXTERNAL_DIR}/SurRoL"
+  else
+    git clone https://github.com/med-air/SurRoL.git "${EXTERNAL_DIR}/SurRoL"
+  fi
+  ( cd "${EXTERNAL_DIR}/SurRoL" && python -m pip install --upgrade pip && python -m pip install -e . ) \
+    || warn "SurRoL 'pip install -e .' 에서 문제가 났습니다. RL 평가 스택(수정 gym/baselines, TF1.14)은
+             SurRoL README의 수동 절차가 필요할 수 있습니다. docs/04-로컬셋업.md 참고."
+  ok "SurRoL 설치 시도 완료. 테스트: ${EXTERNAL_DIR}/SurRoL/tests/ 의 주피터 노트북(test_psm.ipynb 등)"
+  conda activate "$ENV_NAME"
+fi
+
+# ---- (선택) i4h -------------------------------------------------------------
+if [[ "$WITH_I4H" -eq 1 ]]; then
+  step "선택  Isaac for Healthcare 워크플로우 clone"
+  mkdir -p "$EXTERNAL_DIR"
+  if [[ -d "${EXTERNAL_DIR}/i4h-workflows/.git" ]]; then
+    info "i4h-workflows 가 이미 있습니다: ${EXTERNAL_DIR}/i4h-workflows"
+  else
+    git clone https://github.com/isaac-for-healthcare/i4h-workflows.git "${EXTERNAL_DIR}/i4h-workflows"
+  fi
+  ok "i4h clone 완료. 실행은 Docker 기반입니다 — docs/03-i4h-연결.md 를 따라
+      'cd ${EXTERNAL_DIR}/i4h-workflows && ./i4h run robotic_ultrasound full_pipeline --as-root' 등을 실행하세요."
+fi
+
+step "모든 요청 단계 완료"
+ok "요약: Isaac Sim='${ENV_NAME}' 환경 / SurRoL=$([[ $WITH_SURROL -eq 1 ]] && echo '설치됨(surrol 환경)' || echo '건너뜀') / i4h=$([[ $WITH_I4H -eq 1 ]] && echo 'clone됨' || echo '건너뜀')"

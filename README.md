@@ -69,6 +69,7 @@ A100/H100은 RT Core가 없어 초음파 레이트레이싱이 안 되니 **오�
 - [01. 핵심 개념](docs/01-핵심개념.md) — USD/Stage/Prim, SimulationApp 수명주기, 초보자가 반드시 밟는 함정 10가지
 - [02. API 치트시트](docs/02-API-치트시트.md) — 자주 쓰는 import와 패턴 모음
 - [03. Isaac for Healthcare로 넘어가기](docs/03-i4h-연결.md) — i4h 워크플로우 구조와 진입 순서
+- [04. 로컬 PC 셋업](docs/04-로컬셋업.md) — Isaac Sim + SurRoL + i4h를 로컬에 까는 전체 절차 (자동 스크립트 포함)
 
 ---
 
@@ -78,7 +79,12 @@ A100/H100은 RT Core가 없어 초음파 레이트레이싱이 안 되니 **오�
 # 0) 환경 점검 (Isaac Sim 없이도 GPU/드라이버 확인 가능)
 python tools/check_env.py
 
-# 1) Isaac Sim의 python으로 첫 과제 해답 실행 (headless 권장)
+# 1) (RTX GPU가 달린 로컬 PC에서) 자동 셋업 — conda 환경 + Isaac Sim 5.1 + 의존성
+bash setup_local.sh                       # 기본
+bash setup_local.sh --with-surrol --with-i4h   # SurRoL·i4h까지 한 번에
+# 자세한 수동 절차/문제해결: docs/04-로컬셋업.md
+
+# 2) Isaac Sim의 python으로 첫 과제 해답 실행 (headless 권장)
 ./python.sh /path/to/exercises/ex01_hello_phantom/solution.py --test --headless
 ```
 

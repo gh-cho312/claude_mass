@@ -1,0 +1,9 @@
+# 이 과제집(Ex01~10)이 Isaac Sim 외에 추가로 쓰는 파이썬 패키지.
+#
+# 주의: numpy, carb, omni, pxr(USD)는 Isaac Sim이 자체적으로 제공하므로 여기 넣지 않습니다.
+#       (isaacsim 환경에 numpy를 임의 버전으로 덮어쓰면 Isaac Sim이 깨질 수 있습니다.)
+#
+# 설치:  conda activate isaacsim && pip install -r requirements.txt
+
+# Ex10 캡스톤의 HDF5 데이터셋 저장용. 없으면 자동으로 .npz 로 폴백하지만, 권장.
+h5py>=3.0
