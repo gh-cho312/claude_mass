@@ -195,8 +195,14 @@ if [[ "$WITH_SURROL" -eq 1 ]]; then
       ( cd "${EXTERNAL_DIR}/SurRoL" \
           && git fetch origin SurRoL-v2 \
           && git checkout -B SurRoL-v2 origin/SurRoL-v2 ) \
-        || warn "SurRoL-v2 로 전환하지 못했습니다. 가장 간단한 해결은 지우고 다시 받는 것입니다:
-                 rm -rf ${EXTERNAL_DIR}/SurRoL && bash setup_local.sh --with-surrol"
+        || warn "SurRoL-v2 로 전환하지 못했습니다.
+                 흔한 원인: 이전 'pip install -e .' 가 만든 surrol.egg-info 등 빌드 부산물이
+                 로컬 변경으로 잡혀 체크아웃을 막습니다. 둘 중 하나로 푸세요.
+                 (A) 지우고 다시 받기 — 가장 확실하고 v2 는 훨씬 작습니다:
+                     rm -rf ${EXTERNAL_DIR}/SurRoL && bash setup_local.sh --with-surrol
+                 (B) 로컬 변경을 버리고 전환 — 그 폴더에 직접 수정한 게 없을 때만:
+                     cd ${EXTERNAL_DIR}/SurRoL && git reset --hard && git clean -fd \\
+                       && git checkout -B SurRoL-v2 origin/SurRoL-v2"
     else
       git clone -b SurRoL-v2 https://github.com/med-air/SurRoL.git "${EXTERNAL_DIR}/SurRoL" \
         || warn "SurRoL clone 실패(네트워크 확인)."
